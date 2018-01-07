@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<addon addon_id="reallyReadTheTerms" title="[kiror] User really read the terms?" version_string="0.1" version_id="1" url="https://github.com/adlerosn/" install_callback_class="reallyReadTheTerms_Install" install_callback_method="install" uninstall_callback_class="reallyReadTheTerms_Install" uninstall_callback_method="uninstall">
+  <admin_navigation/>
+  <admin_permissions/>
+  <admin_style_properties/>
+  <admin_templates>
+    <template title="user_edit__time_reading_terms__kiror"><![CDATA[<xen:controlunit label="Terms read before registering:">
+<xen:if is="{$user.terms_reading_time} == -3">
+<i>This field was missing on registration</i>; <b>Potential script</b>.
+<xen:else />
+<xen:if is="{$user.terms_reading_time} == -2">
+<i>User registered before this add-on was installed</i>
+<xen:else />
+<xen:if is="{$user.terms_reading_time} == -1">
+<i>User's browser is too old for this add-on</i>
+<xen:else />
+<xen:if is="{$user.terms_reading_time} == 0">
+<b>No</b>
+<xen:else />
+for {$user.terms_reading_time} seconds.
+</xen:if>
+</xen:if>
+</xen:if>
+</xen:if>
+</xen:controlunit>]]></template>
+  </admin_templates>
+  <admin_template_modifications>
+    <modification template="user_edit" modification_key="addtimereadingtermsinadminuseredit" description="Add time reading terms in admin user edit" execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#user\.last_activity.+?</xen:controlunit>.+?</xen:if>#s]]></find>
+      <replace><![CDATA[$0
+<xen:include template="user_edit__time_reading_terms__kiror" />]]></replace>
+    </modification>
+  </admin_template_modifications>
+  <code_events/>
+  <code_event_listeners>
+    <listener event_id="load_class" execute_order="10" callback_class="reallyReadTheTerms_Listener_LoadClass" callback_method="callback" active="1" hint="" description="Listeners on class loading"/>
+  </code_event_listeners>
+  <cron/>
+  <email_templates/>
+  <email_template_modifications/>
+  <optiongroups>
+    <option option_id="secretRegistrationKeyHiddenInRules" edit_format="textbox" data_type="string" can_backup="1">
+      <default_value></default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="usersAndRegistration" display_order="133"/>
+    </option>
+  </optiongroups>
+  <permissions>
+    <permission_groups/>
+    <permissions/>
+    <interface_groups/>
+  </permissions>
+  <phrases>
+    <phrase title="option_secretRegistrationKeyHiddenInRules" version_id="1" version_string="0.1"><![CDATA[Registration password]]></phrase>
+    <phrase title="option_secretRegistrationKeyHiddenInRules_explain" version_id="1" version_string="0.1"><![CDATA[After you hide a password in the Terms of Service and Rules, mention it here to make the registration require it.
+<br />
+This will be case insensitive. Avoid symbols and spaces, as the user will have to repeat what was typed here.
+<br />
+Leaving this blank disables password requirement.]]></phrase>
+    <phrase title="terms_forceread_key" version_id="1" version_string="0.1"><![CDATA[Secret key hidden in Terms]]></phrase>
+    <phrase title="terms_forceread_placeholder" version_id="1" version_string="0.1"><![CDATA[Read the terms and you will know what you should put here]]></phrase>
+  </phrases>
+  <route_prefixes/>
+  <style_properties/>
+  <templates>
+    <template title="help_terms_checkifreadterms" version_id="1" version_string="0.1"><![CDATA[<script>
+window.isActive=true;
+window.onfocus = function(){
+	window.isActive = true;
+};
+window.onblur = function(){
+	window.isActive = false;
+};
+
+function startTermsReadCounter(){
+	try{
+		isOn_MinimumReadCounter;
+		window.isActive;
+	}
+	catch(err){
+		setTimeout(function(){startTermsReadCounter();},1000);
+		if (typeof(Storage) !== "undefined" && window.isActive) {
+			var tr;
+			tr = localStorage.getItem("termsReadTime");
+			if(tr==null || isNaN(tr)){
+				tr = "0";
+				localStorage.setItem("termsReadTime", tr);
+			}
+			tr = parseInt(tr);
+			localStorage.setItem("termsReadTime", tr+1);
+		}
+	}
+}
+startTermsReadCounter();
+
+</script>]]></template>
+    <template title="member_warn__time_reading_terms__kiror" version_id="0" version_string="0.0"><![CDATA[<dd>
+</dd>
+<dt>
+	<xen:if is="{$user.terms_reading_time} == -3">
+		<i>Time spent reading the terms field was missing on registration request</i>; <b>Potential script</b>.
+	<xen:else />
+	<xen:if is="{$user.terms_reading_time} == -2">
+		<i>This user registered before we started counting how much time user spent reading the terms <!-- before the add-on got installed --></i>
+	<xen:else />
+	<xen:if is="{$user.terms_reading_time} == -1">
+		<i>User's browser is too old to know how much time the user spent reading the terms before registering</i>
+	<xen:else />
+	<xen:if is="{$user.terms_reading_time} == 0">
+		<b>Did not read the terms before registering</b>
+	<xen:else />
+	Terms read before registration during {$user.terms_reading_time} seconds.
+	</xen:if>
+	</xen:if>
+	</xen:if>
+	</xen:if>
+</dt>]]></template>
+    <template title="reallyReadTheTerms.js" version_id="1" version_string="0.1"><![CDATA[function startTermsReadCounterUpdater(){
+	if (typeof(Storage) === "undefined") {
+		return;
+	}
+	setTimeout(function(){startTermsReadCounterUpdater();},1000);
+	var timerField = document.getElementById("termsreadingtime");
+	var visibleTimerField = document.getElementById("alwaysVisibleTimeCounterRulesRead");
+	var tr = null;
+	tr = localStorage.getItem("termsReadTime");
+	if(tr==null || isNaN(tr) || isNaN(parseInt(tr))){
+		tr = "0";
+		localStorage.setItem("termsReadTime", tr);
+	}
+	tr = parseInt(tr);
+	try{
+	timerField.value = tr;
+	}catch(err){console.log(err);};
+	try{
+	visibleTimerField.innerHTML = tr;
+	}catch(err){console.log(err);};
+}
+startTermsReadCounterUpdater();]]></template>
+    <template title="register_form_checkifreadterms" version_id="1" version_string="0.1"><![CDATA[<dl class="ctrlUnit submitUnit">
+<dt>{xen:phrase terms_of_service_and_rules}:</dt><dd>
+
+<input type="hidden" id="termsreadingtime" name="termsreadingtime" value="-1" />
+<script>
+<xen:include template="reallyReadTheTerms.js" />
+</script>
+<style>
+div#rulesOnRegistration, div#rulesOnRegistration:before, div#rulesOnRegistration *{
+	position: relative;
+	transition: opacity 0.25s ease-in-out, background-color 0.25s ease-in-out, border-color 0.25s ease-in-out, color 0.25s ease-in-out;
+}
+div#rulesOnRegistration{
+	background-color: {xen:property pageBackground};
+	border-color: {xen:property primaryDarker};
+}
+div#rulesOnRegistration:before{
+	position: absolute;
+	content: 'Hover your mouse or tap here to display the Terms of Service and Rules';
+	font-size: 2em;
+	line-height: 1.5;
+	color: {xen:property pageBackground};
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	text-align: center;
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+}
+div#rulesOnRegistration:before:hover{
+	color: {xen:property pageBackground};
+	opacity: 0;
+}
+div#rulesOnRegistration:hover{
+	background-color: {xen:property pageBackground};
+	border-color: {xen:property primaryLighter};
+}
+div#rulesOnRegistration:hover *{
+	opacity: 1;
+}
+div#rulesOnRegistration:not(:hover){
+	background-color: {xen:property primaryDarker};
+}
+div#rulesOnRegistration:not(:hover) *{
+	opacity: 0;
+}
+</style>
+<script>
+mouseHoveringRules = false;
+function mouseEnteredRulesReader(){
+	mouseHoveringRules = true;
+}
+function mouseExitedRulesReader(){
+	mouseHoveringRules = false;
+}
+</script>
+<div id="rulesOnRegistration" class="sectionMain mainContentBlock section" style="padding-right: 0px; padding-top: 0px; padding-bottom: 0px; border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+	onmouseenter="mouseEnteredRulesReader();" onmouseleave="mouseExitedRulesReader();">
+<div class="baseHtml" style="overflow-y: scroll; height: 250px; line-height: 1.5;" >
+{xen:phrase terms_rules_text}
+</div>
+</div>
+<script>
+function startTermsReadCounter(){
+	setTimeout(function(){startTermsReadCounter();},1000);
+	if(mouseHoveringRules){
+		if (typeof(Storage) !== "undefined") {
+			var tr;
+			tr = localStorage.getItem("termsReadTime");
+			if(tr==null || isNaN(tr)){
+				tr = "0";
+				localStorage.setItem("termsReadTime", tr);
+			}
+			tr = parseInt(tr);
+			localStorage.setItem("termsReadTime", tr+1);
+		}
+	}
+}
+startTermsReadCounter();
+</script>
+<p>We've detected that you read the rules for <span id="alwaysVisibleTimeCounterRulesRead">???</span> seconds.</p>
+
+</dd></dl>
+
+
+<xen:if is="{$xenOptions.secretRegistrationKeyHiddenInRules}">
+<dl class="ctrlUnit">
+	<dt>
+		{xen:phrase terms_forceread_key}:
+		<dfn>{xen:phrase required}</dfn>
+	</dt>
+	<dd>
+		<input id="passwordFoundInTerms" type="text" value="" placeholder="{xen:phrase terms_forceread_placeholder}" class="textCtrl" onchange="javascript:passwordTypedFromRulesChanged();" required />
+		<script>
+		function passwordTypedFromRulesChanged(){
+			window.passwordTypedFromRules = document.getElementById('passwordFoundInTerms').value;
+		}
+		</script>
+	</dd>
+</dl>
+<script>
+window.passwordHiddenInRules = {xen:helper json, $xenOptions.secretRegistrationKeyHiddenInRules}['_response'];
+window.passwordTypedFromRules = '';
+</script>
+<script defer>
+function forceTermsRead_addListenterToSubmitBtn_failable(jQuery){
+	return jQuery('#SubmitButton').click(function(event){
+		var okay  = window.passwordHiddenInRules.toLowerCase();
+		var typed = window.passwordTypedFromRules.toLowerCase();
+		if(typed!=okay){
+			event.preventDefault();
+			document.getElementById('passwordFoundInTerms').value='';
+			document.getElementById('passwordFoundInTerms').focus();
+		};
+	});
+}
+function forceTermsRead_addListenterToSubmitBtn(jQuery){
+	if(forceTermsRead_addListenterToSubmitBtn_failable(jQuery).length==0){
+		setTimeout(function(){forceTermsRead_addListenterToSubmitBtn(jQuery);},500);
+	};
+}
+!function(jQuery){
+	forceTermsRead_addListenterToSubmitBtn(jQuery);
+}(jQuery);
+</script>
+</xen:if>]]></template>
+  </templates>
+  <public_template_modifications>
+    <modification template="register_form" modification_key="addcheckerifuserreallyreadtheterms" description="Adds checker if user really read the terms" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<dl class="ctrlUnit submitUnit">]]></find>
+      <replace><![CDATA[<xen:include template="register_form_checkifreadterms" />
+	$0]]></replace>
+    </modification>
+    <modification template="help_terms" modification_key="addtermcheckercounterinhelpterms" description="Adds checker if user really read the terms in help/terms" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[{xen:phrase terms_rules_text}]]></find>
+      <replace><![CDATA[$0
+
+<xen:include template="help_terms_checkifreadterms" />]]></replace>
+    </modification>
+    <modification template="member_warn" modification_key="addtimereadingtermsinwarnmember" description="Add time reading terms in warn member" execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#warningHeader.+?content.+?</dd>#s]]></find>
+      <replace><![CDATA[$0
+<xen:include template="member_warn__time_reading_terms__kiror" />]]></replace>
+    </modification>
+  </public_template_modifications>
+  <bb_code_media_sites/>
+  <bb_codes/>
+</addon>
